@@ -2,11 +2,12 @@ const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const Campground = require('./models/campground');
+const Review = require('./models/review');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const wrapAsync = require('./utilities/wrapAsync');
 const ExpressError = require('./utilities/ExpressError');
-const { campSchema } = require('./validationSchemas.js');
+const { campSchema, reviewSchema } = require('./validationSchemas.js');
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp', {
     useNewUrlParser: true,
@@ -39,6 +40,17 @@ const validateCamp = (req, res, next) => {
     }
 }
 
+const validateReview = (req, res, next) => {
+    const { error } = reviewSchema.validate(req.body);
+    if(error){
+        const msg = error.details.map(e => e.message).join(', ');
+        throw new ExpressError(msg, 400);
+    }
+    else {
+        next();
+    }
+}
+
 app.get('/', (req, res) => {
     res.render('home');
 });
@@ -54,7 +66,7 @@ app.get('/campgrounds/new', (req, res) => {
 
 app.get('/campgrounds/:id', wrapAsync(async (req, res) => {
     const { id } = req.params;
-    const camp = await Campground.findById(id);
+    const camp = await Campground.findById(id).populate('reviews');
     res.render('campgrounds/show', { camp });
 }));
 
@@ -82,6 +94,24 @@ app.delete('/campgrounds/:id', wrapAsync(async (req, res) => {
     const camp = await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds');
 }));
+
+app.post('/campgrounds/:id/reviews', validateReview, wrapAsync(async (req, res) => {
+    const camp = await Campground.findById(req.params.id);
+    const review = new Review(req.body.review);
+    camp.reviews.push(review);
+    await review.save();
+    await camp.save();
+    res.redirect(`/campgrounds/${camp._id}`);
+}));
+
+app.delete('/campgrounds/:id/reviews/:reviewId', wrapAsync(async (req, res) => {
+    console.log('deleting...');
+    const { id, reviewId } = req.params;
+    await Campground.findByIdAndUpdate(id, {$pull: {reviews: reviewId}});
+    await Review.findByIdAndDelete(reviewId);
+    res.redirect(`/campgrounds/${id}`);
+
+}))
 
 app.all('*', (req, res, next) => {
     next(new ExpressError('Page Not Found', 404));
