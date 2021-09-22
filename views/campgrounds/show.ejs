@@ -4,6 +4,7 @@
 
 <div class="row">
     <div class="col-6">
+      <div id='map' style='width: 400px; height: 300px;'></div>
         <div id="campCarousel" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
                 <% camp.images.forEach((img, i) => {%> 
@@ -17,7 +18,7 @@
               <span class="carousel-control-prev-icon" aria-hidden="true"></span>
               <span class="visually-hidden">Previous</span>
             </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#campCarousel" data-bs-slide="next">
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselEcampCarouselxampleControls" data-bs-slide="next">
               <span class="carousel-control-next-icon" aria-hidden="true"></span>
               <span class="visually-hidden">Next</span>
             </button>
@@ -94,3 +95,8 @@
     </div>
 </div>
 
+<script>
+  const mapToken = '<%- process.env.MAPBOX_TOKEN %>';
+  const camp = <%- JSON.stringify(camp) %>;
+</script>
+<script src="/js/showPageMap.js"></script>
